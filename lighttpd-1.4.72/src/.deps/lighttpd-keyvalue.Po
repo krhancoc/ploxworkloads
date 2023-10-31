@@ -1,0 +1,112 @@
+lighttpd-keyvalue.o: keyvalue.c first.h ../config.h \
+  /usr/include/sys/types.h /usr/include/sys/cdefs.h \
+  /usr/include/machine/endian.h /usr/include/x86/endian.h \
+  /usr/include/sys/_types.h /usr/include/machine/_types.h \
+  /usr/include/x86/_types.h /usr/include/machine/_limits.h \
+  /usr/include/x86/_limits.h /usr/include/sys/_endian.h \
+  /usr/include/sys/_pthreadtypes.h /usr/include/sys/_stdint.h \
+  /usr/include/sys/select.h /usr/include/sys/_sigset.h \
+  /usr/include/sys/_timeval.h /usr/include/sys/timespec.h \
+  /usr/include/sys/_timespec.h /usr/include/stddef.h \
+  /usr/include/sys/_null.h /usr/include/stdint.h \
+  /usr/include/machine/_stdint.h /usr/include/x86/_stdint.h \
+  /usr/include/limits.h /usr/include/sys/limits.h \
+  /usr/include/sys/syslimits.h keyvalue.h base_decls.h buffer.h ck.h \
+  /usr/include/errno.h plugin_config.h array.h burl.h log.h \
+  /usr/include/stdlib.h /usr/include/string.h /usr/include/strings.h \
+  /usr/include/xlocale/_strings.h /usr/include/xlocale/_string.h \
+  /usr/local/include/pcre2.h /usr/include/inttypes.h \
+  /usr/include/machine/_inttypes.h /usr/include/x86/_inttypes.h \
+  /usr/include/sys/stdint.h
+
+first.h:
+
+../config.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/machine/endian.h:
+
+/usr/include/x86/endian.h:
+
+/usr/include/sys/_types.h:
+
+/usr/include/machine/_types.h:
+
+/usr/include/x86/_types.h:
+
+/usr/include/machine/_limits.h:
+
+/usr/include/x86/_limits.h:
+
+/usr/include/sys/_endian.h:
+
+/usr/include/sys/_pthreadtypes.h:
+
+/usr/include/sys/_stdint.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/sys/_sigset.h:
+
+/usr/include/sys/_timeval.h:
+
+/usr/include/sys/timespec.h:
+
+/usr/include/sys/_timespec.h:
+
+/usr/include/stddef.h:
+
+/usr/include/sys/_null.h:
+
+/usr/include/stdint.h:
+
+/usr/include/machine/_stdint.h:
+
+/usr/include/x86/_stdint.h:
+
+/usr/include/limits.h:
+
+/usr/include/sys/limits.h:
+
+/usr/include/sys/syslimits.h:
+
+keyvalue.h:
+
+base_decls.h:
+
+buffer.h:
+
+ck.h:
+
+/usr/include/errno.h:
+
+plugin_config.h:
+
+array.h:
+
+burl.h:
+
+log.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/string.h:
+
+/usr/include/strings.h:
+
+/usr/include/xlocale/_strings.h:
+
+/usr/include/xlocale/_string.h:
+
+/usr/local/include/pcre2.h:
+
+/usr/include/inttypes.h:
+
+/usr/include/machine/_inttypes.h:
+
+/usr/include/x86/_inttypes.h:
+
+/usr/include/sys/stdint.h:
