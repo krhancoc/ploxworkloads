@@ -6,10 +6,17 @@ all: $(SUBDIRS) $(REQGMAKE)
 
 .PHONY: all $(SUBDIRS) $(REQGMAKE)
 
-$(SUBDIRS):
+configure:
+	cd lighttpd-1.4.72; ./configure
+
+distclean:
+	$(MAKE) -C lighttpd-1.4.72 distclean
+
+
+$(SUBDIRS): configure
 	$(MAKE) -C $@ CC=$(CC)
 
-$(REQGMAKE):
+$(REQGMAKE): configure
 	gmake -C $@ CC=$(CC)
 
 clean:
