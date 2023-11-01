@@ -5,6 +5,7 @@
 #include <sys/syscall.h>
 #include <sys/select.h>
 #include <sys/mman.h>
+#include <sys/event.h>
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -135,41 +136,26 @@ int getenv_as_int() {
 KCOV_SYS_ARG3(accept, SYS_accept, int, int, struct sockaddr *, socklen_t *);
 KCOV_SYS_ARG4(accept4, SYS_accept4, int, int, struct sockaddr *, socklen_t *, int);
 KCOV_SYS_ARG6(mmap, SYS_mmap, void *, void *,  size_t, int, int, int, off_t);
-//KCOV_SYS_ARG3(connect, SYS_connect, int, int, const struct sockaddr *, socklen_t);
-//KCOV_SYS_ARG4(fstatat, SYS_fstatat, int, int, const char *, struct stat *, int);
-//KCOV_SYS_ARG3(poll, SYS_poll, int, struct pollfd *, unsigned, int);
-//KCOV_SYS_ARG3(write, SYS_write, ssize_t, int, const void *, size_t);
-// KCOV_SYS_ARG5(select, SYS_select, int, int, struct fd_set *, struct fd_set *, struct fd_set *, struct timeval *);
-// KCOV_SYS_ARG6(recvfrom, SYS_recvfrom, ssize_t, int, void *, size_t, int, struct sockaddr *, socklen_t *);
-// KCOV_SYS_ARG6(sendto, SYS_sendto, ssize_t, int, const void *, size_t, int, const struct sockaddr *, socklen_t);
-// KCOV_SYS_ARG3(sendmsg, SYS_sendmsg, ssize_t, int, const struct msghdr *, int);
-// KCOV_SYS_ARG3(recvmsg, SYS_recvmsg, ssize_t, int, struct msghdr *, int);
-// KCOV_SYS_ARG2(truncate, SYS_truncate, int, const char *, off_t);
-// KCOV_SYS_ARG2(ftruncate, SYS_ftruncate, int, int, off_t);
-// KCOV_SYS_ARG3(socket, SYS_socket, int, int, int, int);
-// We handle mmap, open, ioctl, read, write because they are in the main system call path for
-// setting up the kcov device. open and ioctl also needs to pull out va_args to be passed
-// forward.
-ssize_t __sys_read(int, void *, size_t);
-ssize_t __plox_read(int fd, void * a, size_t b)
-{
-	if (fd == kcov_device) {
-		return syscall(SYS_read, fd, a, b);
-	}
+KCOV_SYS_ARG3(connect, SYS_connect, int, int, const struct sockaddr *, socklen_t);
+KCOV_SYS_ARG4(fstatat, SYS_fstatat, int, int, const char *, struct stat *, int);
+KCOV_SYS_ARG3(poll, SYS_poll, int, struct pollfd *, unsigned, int);
+KCOV_SYS_ARG3(read, SYS_read, ssize_t, int, void *, size_t);
+KCOV_SYS_ARG3(write, SYS_write, ssize_t, int, const void *, size_t);
+KCOV_SYS_ARG5(select, SYS_select, int, int, struct fd_set *, struct fd_set *, struct fd_set *, struct timeval *);
+KCOV_SYS_ARG6(recvfrom, SYS_recvfrom, ssize_t, int, void *, size_t, int, struct sockaddr *, socklen_t *);
+KCOV_SYS_ARG6(sendto, SYS_sendto, ssize_t, int, const void *, size_t, int, const struct sockaddr *, socklen_t);
+KCOV_SYS_ARG3(sendmsg, SYS_sendmsg, ssize_t, int, const struct msghdr *, int);
+KCOV_SYS_ARG3(recvmsg, SYS_recvmsg, ssize_t, int, struct msghdr *, int);
+KCOV_SYS_ARG2(truncate, SYS_truncate, int, const char *, off_t);
+KCOV_SYS_ARG2(ftruncate, SYS_ftruncate, int, int, off_t);
+KCOV_SYS_ARG3(socket, SYS_socket, int, int, int, int);
+KCOV_SYS_ARG3(bind, SYS_bind, int, int, const struct sockaddr *, socklen_t);
+KCOV_SYS_ARG2(listen, SYS_listen, int, int, int);
+KCOV_SYS_ARG5(setsockopt, SYS_setsockopt, int, int, int, int, const void *, socklen_t);
+KCOV_SYS_ARG5(getsockopt, SYS_getsockopt, int, int, int, int, void *, socklen_t *);
+KCOV_SYS_ARG6(kevent, SYS_kevent, int, int, const struct kevent *, int, struct kevent *, int, const struct timespec *);
 
-	if (getenv_as_int() == SYS_read) {
-		kcov_startup();
-	}
-
-	ssize_t returnval = syscall(SYS_read, fd, a, b);
-
-	if (getenv_as_int() == SYS_read) {
-		kcov_done();
-	}
-	return returnval;
-}
-//__strong_reference(__plox_read, read); 
-
+// open and ioctl needs to pull out va_args to be passed forward.
 int __sys_open(const char *, int, ...);
 int __plox_open(const char *path, int flags, ...) {
 	int mode;
@@ -224,6 +210,26 @@ int __plox_ioctl(int fd, unsigned long request, ...) {
 }
 __strong_reference(__plox_ioctl, ioctl); 
 
+int __sys_fcntl(int fd, int request, ...);
+int __plox_fcntl(int fd, int request, ...) {
+	va_list args;
+
+	va_start(args, request);
+	uint64_t inout = va_arg(args, uint64_t);
+	va_end(args);
+
+	if (getenv_as_int() == SYS_fcntl) {
+		kcov_startup();
+	}
+
+	int returnval = __sys_fcntl(fd, request, inout);
+	if (getenv_as_int() == SYS_fcntl) {
+		kcov_done();
+	}
+	return returnval;
+}
+__strong_reference(__plox_fcntl, fcntl); 
+
 
 
 void kcov_startup() {
@@ -272,7 +278,7 @@ void kcov_done() {
 
 	for (uint64_t i = 1; i < kcov_buf[0]; i++) {
 		snprintf(buf, 256, "%#jx\n", (uintmax_t)kcov_buf[i]) ;
-		write(kcov_log, buf, strlen(buf));
+		__sys_write(kcov_log, buf, strlen(buf));
 	}
 
 	return;
