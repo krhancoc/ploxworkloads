@@ -23,7 +23,6 @@ const size_t KCOV_BUF_SIZE =  1ul << 27; // 64 MiB
 _Thread_local int kcov_device = KCOV_DEV_NULL; // We set it to NOT -1, as mmap could have -1 as a fd arg.
 _Thread_local int kcov_log = KCOV_DEV_NULL;
 _Thread_local uint64_t *kcov_buf = NULL;
-pthread_mutex_t kcov_lock = PTHREAD_MUTEX_INITIALIZER;
 const char *KCOV_LOG = "/tmp/kcov.log";
 char pbuffer[1024];
 
