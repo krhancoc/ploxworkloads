@@ -3,3 +3,4 @@ libcoverage/*.so
 out/*
 lighttpd-1.4.72
 wrk
+bcpi
