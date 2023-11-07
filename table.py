@@ -42,6 +42,8 @@ TOTALS = {
     "kevent": 4044,
     "bind": 10197,
     "listen": 1336,
+    "accept4": 1379,
+    "getsockopt": 3743,
 }
 
 path = "out"
@@ -72,9 +74,9 @@ for sys,num in MAPPING.items():
 
 csv = header + "\n"
 i = 0
+total_reduction = []
 for sys,num in reduced_mapping.items():
-    line = sys + "-" + str(num) + ","
-    table += "\\code{" + sys + "} & "
+    line = "\\code{" + sys + "} & "
     vals = []
     for ls in os.listdir(path):
         p = path + "/" + ls + "/" + str(num) + "/" + "analysis.txt"
@@ -84,24 +86,27 @@ for sys,num in reduced_mapping.items():
                 vals.append(value)
         else:
             value = "N/A"
-        table += str(value) + " & "
-        line += str(value) + ","
+        line += str(value) + " & "
     if sys in TOTALS:
         total = TOTALS[sys]
         reductions = [round((float(x) / float(total)) * 100) for x in vals if x > 0]
         if (len(reductions)):
             reductions = round(100 - (sum(reductions) / len(reductions)))
-            table += str(TOTALS[sys]) + " & " + str(reductions) + " \\\\\n"
+            line += str(TOTALS[sys]) + " & " + str(reductions) + "\\% \\\\\n"
+            total_reduction.append(reductions)
         else:
-            table += str(TOTALS[sys]) + " & N/A \\\\\n"
+            continue
     else:
-        total = "N/A" 
-        table += "N/A & N/A \\\\\n"
-    #print(line)
+        continue
+
     if ((i % 2) == 0):
-        table += "\\rowcolor[HTML]{EFEFEF}\n"
+        line += "\\rowcolor[HTML]{EFEFEF}\n"
     i += 1
-    csv += line + ", " + str(total) + "\n"
+    table += line
+
+total_reduction = round(sum(total_reduction) / len(total_reduction))
+table += "\\bottomrule\n"
+table += "Average Reduction & \multicolumn{" + str(num_workloads + EXTRA_COL - 1) + "}{c}{" + str(total_reduction) +"\\%}\\\\"
 
 table += """
 \\bottomrule

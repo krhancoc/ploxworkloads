@@ -6,3 +6,4 @@ wrk
 bcpi
 libmemcached-1.0.18
 dump.rdb
+dbbench-0.6.10

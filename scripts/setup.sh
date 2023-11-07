@@ -29,3 +29,11 @@ sudo pkg install nginx
 
 # Redis Setup
 sudo pkg install redis
+
+# Sqlite Setup
+sudo pkg install sqlite
+sudo pkg install go
+wget https://github.com/sj14/dbbench/archive/refs/tags/v0.6.10.tar.gz
+tar zxf v0.6.10.tar.gz
+rm v0.6.10.tar.gz
+

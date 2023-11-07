@@ -1,10 +1,11 @@
 CC = clang
 SUBDIRS := libcoverage lighttpd-1.4.72
 REQGMAKE := wrk libmemcached-1.0.18
+GOBUILD := dbbench-0.6.10
 
 all: $(SUBDIRS) $(REQGMAKE)
 
-.PHONY: all $(SUBDIRS) $(REQGMAKE)
+.PHONY: all $(SUBDIRS) $(REQGMAKE) $(GOBUILD)
 
 configure:
 	cd lighttpd-1.4.72; autoreconf -f
@@ -20,6 +21,11 @@ $(SUBDIRS):
 
 $(REQGMAKE):
 	gmake -C $@ CC=$(CC)
+
+$(GOBUILD):
+	cd dbbench-0.6.10; go mod download
+	cd dbbench-0.6.10; go build -v ./cmd/dbbench/... 
+
 
 clean:
 	@for dir in $(SUBDIRS); do \
