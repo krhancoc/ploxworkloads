@@ -43,7 +43,7 @@ TOTALS = {
     "bind": 10197,
     "listen": 1336,
     "accept4": 1379,
-    "getsockopt": 3743,
+    "getsockopt": 4498,
 }
 
 path = "out"
