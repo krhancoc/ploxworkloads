@@ -4,3 +4,5 @@ out/*
 lighttpd-1.4.72
 wrk
 bcpi
+libmemcached-1.0.18
+dump.rdb

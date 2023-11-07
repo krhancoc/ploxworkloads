@@ -3,14 +3,13 @@
 ROOT=$(realpath "$(dirname "$0")/..")
 source $ROOT/scripts/syscalls.sh
 
-DIRNAME="lighttpd-1.4.72"
-LIGHTTPD="$ROOT/$DIRNAME/src/lighttpd"
-CONFIG="configs/lighttpd.conf"
+NGINX="nginx"
+CONFIG="$ROOT/configs/nginx.conf"
 DIRBENCH="wrk"
 WRK="$ROOT/$DIRBENCH/wrk"
 LIBCOVERAGE="$ROOT/libcoverage/libcoverage.so"
 
-OUTPUT="$ROOT/out/lighttpd/"
+OUTPUT="$ROOT/out/nginx/"
 
 
 sudo mkdir -p $OUTPUT
@@ -19,17 +18,19 @@ sudo chmod a+rwx $OUTPUT
 sudo rm /tmp/kcov.log > /dev/null 2> /dev/null
 sudo rm "$ROOT/bcpi/ghidra/projects/kernel.full.lock*"
 
-kill -9 $(pgrep lighttpd) > /dev/null 2> /dev/null
+kill -9 $(pgrep nginx) > /dev/null 2> /dev/null
 
 for NUM in $COVERAGE
 do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
+		echo "sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $NGINX -c $CONFIG -e $ROOT/logs/error.log"
+		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $NGINX -c "$CONFIG" -e "$ROOT/logs/error.log" &
+		sleep 1
 		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
-		sudo kill -9 $(pgrep lighttpd)
+		sudo kill -3 $(pgrep nginx)
+		sleep 1
 		sudo mkdir -p "$OUTPUT/$NUM"
 		sudo chmod a+rwx "$OUTPUT/$NUM"
 		if [ ! -e "$OUTPUT/$NUM/kcov.log" ]; then

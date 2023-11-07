@@ -3,14 +3,11 @@
 ROOT=$(realpath "$(dirname "$0")/..")
 source $ROOT/scripts/syscalls.sh
 
-DIRNAME="lighttpd-1.4.72"
-LIGHTTPD="$ROOT/$DIRNAME/src/lighttpd"
-CONFIG="configs/lighttpd.conf"
-DIRBENCH="wrk"
-WRK="$ROOT/$DIRBENCH/wrk"
+BENCH="redis-benchmark"
 LIBCOVERAGE="$ROOT/libcoverage/libcoverage.so"
+REDIS="redis-server"
 
-OUTPUT="$ROOT/out/lighttpd/"
+OUTPUT="$ROOT/out/redis/"
 
 
 sudo mkdir -p $OUTPUT
@@ -19,17 +16,20 @@ sudo chmod a+rwx $OUTPUT
 sudo rm /tmp/kcov.log > /dev/null 2> /dev/null
 sudo rm "$ROOT/bcpi/ghidra/projects/kernel.full.lock*"
 
-kill -9 $(pgrep lighttpd) > /dev/null 2> /dev/null
+kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
 
 for NUM in $COVERAGE
 do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
-		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
-		sudo kill -9 $(pgrep lighttpd)
+		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf"
+		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
+		sleep 1
+		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
+		sleep 5
+		sudo kill -9 $(pgrep redis-benchmark) > /dev/null 2> /dev/null
+		sudo kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
 		sudo mkdir -p "$OUTPUT/$NUM"
 		sudo chmod a+rwx "$OUTPUT/$NUM"
 		if [ ! -e "$OUTPUT/$NUM/kcov.log" ]; then

@@ -25,8 +25,11 @@ TOTALS = {
     "recv": 4280,
     "send": 7162,
     "read": 18788,
-    "write": 12990,
+    "open": 12990,
     "setsockopt": 7569,
+    "connect": 9792,
+    "close": 7480,
+    "fstatat": 5545,
     "ioctl": 13097,
     "write": 12553,
     "close": 7480,
@@ -35,8 +38,12 @@ TOTALS = {
     "lseek": 5815,
     "truncate": 11539,
     "sendmsg": 14173,
-    "recvmsg": 4380
+    "recvmsg": 4380,
+    "kevent": 4044,
+    "bind": 10197,
+    "listen": 1336,
 }
+
 path = "out"
 num_workloads = len(os.listdir(path))
 
@@ -51,6 +58,7 @@ for ls in os.listdir(path):
     table += "\\textbf{" + ls + "} & "
 table += "\\textbf{Total} & \\textbf{Avg Reduction}\\\\\n"
 header += "Total"
+table += "\\midrule\n"
 
 #print(header)
 
@@ -63,6 +71,7 @@ for sys,num in MAPPING.items():
 
 
 csv = header + "\n"
+i = 0
 for sys,num in reduced_mapping.items():
     line = sys + "-" + str(num) + ","
     table += "\\code{" + sys + "} & "
@@ -81,7 +90,7 @@ for sys,num in reduced_mapping.items():
         total = TOTALS[sys]
         reductions = [round((float(x) / float(total)) * 100) for x in vals if x > 0]
         if (len(reductions)):
-            reductions = 100 - (sum(reductions) / len(reductions))
+            reductions = round(100 - (sum(reductions) / len(reductions)))
             table += str(TOTALS[sys]) + " & " + str(reductions) + " \\\\\n"
         else:
             table += str(TOTALS[sys]) + " & N/A \\\\\n"
@@ -89,6 +98,9 @@ for sys,num in reduced_mapping.items():
         total = "N/A" 
         table += "N/A & N/A \\\\\n"
     #print(line)
+    if ((i % 2) == 0):
+        table += "\\rowcolor[HTML]{EFEFEF}\n"
+    i += 1
     csv += line + ", " + str(total) + "\n"
 
 table += """

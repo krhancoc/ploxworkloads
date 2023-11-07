@@ -1,0 +1,34 @@
+diff --git a/clients/memflush.cc b/clients/memflush.cc
+index 8bd0dbf..71545ea 100644
+--- a/clients/memflush.cc
++++ b/clients/memflush.cc
+@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
+ {
+   options_parse(argc, argv);
+ 
+-  if (opt_servers == false)
++  if (opt_servers == NULL)
+   {
+     char *temp;
+ 
+@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
+       opt_servers= strdup(temp);
+     }
+ 
+-    if (opt_servers == false)
++    if (opt_servers == NULL)
+     {
+       std::cerr << "No Servers provided" << std::endl;
+       exit(EXIT_FAILURE);
+diff --git a/libtest/lite.h b/libtest/lite.h
+index 36f873e..b12730c 100644
+--- a/libtest/lite.h
++++ b/libtest/lite.h
+@@ -53,6 +53,7 @@
+ 
+ #if defined(WIN32)
+ # include <malloc.h>
++#elif defined(__FreeBSD__)
+ #else
+ # include <alloca.h>
+ #endif
