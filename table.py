@@ -44,6 +44,7 @@ TOTALS = {
     "listen": 1336,
     "accept4": 1379,
     "getsockopt": 4498,
+    "accept": 3901,
 }
 
 path = "out"
