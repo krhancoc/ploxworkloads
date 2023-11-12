@@ -1,5 +1,5 @@
 CC = clang
-SUBDIRS := libcoverage lighttpd-1.4.72
+SUBDIRS := lighttpd-1.4.72
 REQGMAKE := wrk libmemcached-1.0.18
 GOBUILD := dbbench-0.6.10
 

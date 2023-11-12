@@ -22,8 +22,8 @@ SYS_ftruncate=480
 SYS_accept4=541
 SYS_fstatat=552
 SYS_kevent=560
-
+SYS_ALL=1000
 
 COVERAGE="$SYS_read $SYS_write $SYS_open $SYS_recvmsg $SYS_sendmsg $SYS_recvfrom $SYS_accept \
   $SYS_select $SYS_socket $SYS_connect $SYS_sendto $SYS_poll $SYS_mmap $SYS_truncate $SYS_ftruncate \
-  $SYS_accept4 $SYS_fstatat $SYS_bind $SYS_setsockopt $SYS_getsockopt $SYS_fcntl $SYS_listen $SYS_kevent"
+  $SYS_accept4 $SYS_fstatat $SYS_bind $SYS_setsockopt $SYS_getsockopt $SYS_fcntl $SYS_listen $SYS_kevent $SYS_ALL"

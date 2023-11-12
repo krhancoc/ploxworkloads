@@ -18,6 +18,12 @@
 
 #include <pthread.h>
 
+#define SYS_ALL (1000)
+
+#ifndef SYSCALL_TRACE_NUMBER
+#error "SYSCALL_TRACE_NUMBER not defined"
+#endif
+
 const size_t KCOV_BUF_SIZE =  1ul << 27; // 64 MiB
 #define KCOV_DEV_NULL (-420)
 _Thread_local int kcov_device = KCOV_DEV_NULL; // We set it to NOT -1, as mmap could have -1 as a fd arg.
@@ -38,11 +44,11 @@ void kcov_done();
 #define KCOV_SYS_ARG6(_name, SYS_num, return_type, arg1, arg2, arg3, arg4, arg5, arg6) \
 return_type __sys_##_name(arg1, arg2, arg3, arg4, arg5, arg6); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d, arg5 e, arg6 f) { \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d, e, f); \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -52,11 +58,11 @@ __strong_reference(__plox_##_name, _name)
 #define KCOV_SYS_ARG5(_name, SYS_num, return_type, arg1, arg2, arg3, arg4, arg5) \
 return_type __sys_##_name(arg1, arg2, arg3, arg4, arg5); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d, arg5 e) { \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d, e); \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -68,11 +74,11 @@ __strong_reference(__plox_##_name, _name)
 typedef return_type (* f_##_name)(arg1, arg2, arg3, arg4); \
 return_type __sys_##_name(arg1, arg2, arg3, arg4); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d) { \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d); \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -84,11 +90,11 @@ __strong_reference(__plox_##_name, _name)
 typedef return_type (* f_##_name)(arg1, arg2, arg3); \
 return_type __sys_##_name(arg1, arg2, arg3); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c) { \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c); \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -98,11 +104,11 @@ __strong_reference(__plox_##_name, _name)
 #define KCOV_SYS_ARG2(_name, SYS_num, return_type, arg1, arg2) \
 return_type __sys_##_name(arg1, arg2); \
 return_type __plox_##_name(arg1 a, arg2 b) { \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b); \
-	if (getenv_as_int() == SYS_num) { \
+	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -172,13 +178,13 @@ int __plox_open(const char *path, int flags, ...) {
 		return __sys_open(path, flags, mode);
 	}
 
-	if (getenv_as_int() == SYS_open) {
+	if (SYSCALL_TRACE_NUMBER == SYS_open) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_open(path, flags, mode);
 
-	if (getenv_as_int() == SYS_open) {
+	if (SYSCALL_TRACE_NUMBER == SYS_open) {
 		kcov_done();
 	}
 
@@ -197,12 +203,12 @@ int __plox_ioctl(int fd, unsigned long request, ...) {
 	if (fd == kcov_device)
 		return __sys_ioctl(fd, request, inout);
 
-	if (getenv_as_int() == SYS_open) {
+	if (SYSCALL_TRACE_NUMBER == SYS_open) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_ioctl(fd, request, inout);
-	if (getenv_as_int() == SYS_open) {
+	if (SYSCALL_TRACE_NUMBER == SYS_open) {
 		kcov_done();
 	}
 	return returnval;
@@ -217,12 +223,12 @@ int __plox_fcntl(int fd, int request, ...) {
 	uint64_t inout = va_arg(args, uint64_t);
 	va_end(args);
 
-	if (getenv_as_int() == SYS_fcntl) {
+	if (SYSCALL_TRACE_NUMBER == SYS_fcntl) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_fcntl(fd, request, inout);
-	if (getenv_as_int() == SYS_fcntl) {
+	if (SYSCALL_TRACE_NUMBER == SYS_fcntl) {
 		kcov_done();
 	}
 	return returnval;
@@ -235,7 +241,7 @@ void kcov_startup() {
 	if (kcov_device == KCOV_DEV_NULL) {
 		kcov_device = __sys_open("/dev/kcov", O_RDWR, 0);
 		if (kcov_device == -1)  {
-			printf("Problem loading kcov device");
+			printf("Problem loading kcov device %d", errno);
 			exit(-1);
 		}
 

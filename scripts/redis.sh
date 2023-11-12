@@ -23,8 +23,10 @@ do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
+		echo "LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf"
+		make -C $ROOT/libcoverage clean
+		make -C $ROOT/libcoverage CFLAGS=-DSYSCALL_TRACE_NUMBER=$NUM
+		sudo LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
 		sleep 1
 		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
 		sleep 5

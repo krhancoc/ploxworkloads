@@ -20,6 +20,8 @@ with open("/usr/include/sys/syscall.h") as f:
             line = line.split()
             MAPPING[line[1].split("_")[1]] = int(line[2])
 
+MAPPING["all"] = 1000
+
 TOTALS = {
     "mmap": 4800,
     "recv": 4280,
@@ -45,6 +47,7 @@ TOTALS = {
     "accept4": 1379,
     "getsockopt": 4498,
     "accept": 3901,
+    "all": 55202,
 }
 
 path = "out"
@@ -73,6 +76,7 @@ for sys,num in MAPPING.items():
             reduced_mapping[sys] = num
 
 
+print(reduced_mapping)
 csv = header + "\n"
 i = 0
 total_reduction = []
@@ -80,14 +84,20 @@ for sys,num in reduced_mapping.items():
     line = "\\code{" + sys + "} & "
     vals = []
     for ls in os.listdir(path):
-        p = path + "/" + ls + "/" + str(num) + "/" + "analysis.txt"
-        if(os.path.exists(p)):
-            value = get_value(p)
-            if (value > 0):
-                vals.append(value)
-        else:
-            value = "N/A"
-        line += str(value) + " & "
+        try:
+            p = path + "/" + ls + "/" + str(num) + "/" + "analysis.txt"
+            if(os.path.exists(p)):
+                value = get_value(p)
+                if (value > 0):
+                    vals.append(value)
+                if (value == 0):
+                    value = "-"
+            else:
+                value = "N/A"
+            line += str(value) + " & "
+        except Exception as e:
+            print(p, e)
+            exit(0)
     if sys in TOTALS:
         total = TOTALS[sys]
         reductions = [round((float(x) / float(total)) * 100) for x in vals if x > 0]

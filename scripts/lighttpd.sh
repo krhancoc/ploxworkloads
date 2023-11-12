@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 ROOT=$(realpath "$(dirname "$0")/..")
-source $ROOT/scripts/syscalls.sh
+source "$ROOT/scripts/syscalls.sh"
 
 DIRNAME="lighttpd-1.4.72"
 LIGHTTPD="$ROOT/$DIRNAME/src/lighttpd"
-CONFIG="configs/lighttpd.conf"
+CONFIG="$ROOT/configs/lighttpd.conf"
 DIRBENCH="wrk"
 WRK="$ROOT/$DIRBENCH/wrk"
 LIBCOVERAGE="$ROOT/libcoverage/libcoverage.so"
+YELLCOVERAGE="/home/ryan/ploxd/build/src/overlay/liboverlay.so"
 
 OUTPUT="$ROOT/out/lighttpd/"
 
@@ -26,8 +27,10 @@ do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
+		echo "LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
+		make -C $ROOT/libcoverage clean
+		make -C $ROOT/libcoverage CFLAGS=-DSYSCALL_TRACE_NUMBER=$NUM
+		sudo LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
 		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
 		sudo kill -9 $(pgrep lighttpd)
 		sudo mkdir -p "$OUTPUT/$NUM"
@@ -49,4 +52,3 @@ for NUM in $COVERAGE
 do
 	$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov.log  > $OUTPUT/$NUM/analysis.txt
 done
-

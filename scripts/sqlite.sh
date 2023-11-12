@@ -23,8 +23,10 @@ do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $DBBENCH sqlite --iter 50 --threads 8"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $DBBENCH sqlite --iter 50 --threads 8 > /dev/null
+		echo "sudo LD_PRELOAD=$LIBCOVERAGE $DBBENCH sqlite --iter 50 --threads 8"
+		make -C $ROOT/libcoverage clean
+		make -C $ROOT/libcoverage CFLAGS=-DSYSCALL_TRACE_NUMBER=$NUM
+		sudo LD_PRELOAD=$LIBCOVERAGE $DBBENCH sqlite --iter 50 --threads 8 > /dev/null
 		sudo mkdir -p "$OUTPUT/$NUM"
 		sudo chmod a+rwx "$OUTPUT/$NUM"
 		if [ ! -e "$OUTPUT/$NUM/kcov.log" ]; then

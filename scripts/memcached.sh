@@ -24,8 +24,10 @@ do
 	for ITER in {1..5}
 	do
 		echo "Coverage of $NUM-$ITER"
-		echo "SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -l 127.0.0.1 -p 19999"
-		sudo SYSCALL_TRACE_NUMBER=$NUM LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -u root -l 127.0.0.1 -p 19999 &
+		echo "LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -l 127.0.0.1 -p 19999"
+		make -C $ROOT/libcoverage clean
+		make -C $ROOT/libcoverage CFLAGS=-DSYSCALL_TRACE_NUMBER=$NUM
+		sudo LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -u root -l 127.0.0.1 -p 19999 &
 		sleep 1
 		$MEMSLAP -s 127.0.0.1:19999 > /dev/null
 		sudo kill -9 $(pgrep memcached) > /dev/null 2> /dev/null
