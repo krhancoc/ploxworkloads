@@ -20,7 +20,7 @@ with open("/usr/include/sys/syscall.h") as f:
             line = line.split()
             MAPPING[line[1].split("_")[1]] = int(line[2])
 
-MAPPING["all"] = 1000
+MAPPING["all"] = 9999
 
 TOTALS = {
     "mmap": 4800,
@@ -47,23 +47,20 @@ TOTALS = {
     "accept4": 1379,
     "getsockopt": 4498,
     "accept": 3901,
-    "all": 55202,
+    "all": 56791,
 }
 
 path = "out"
 num_workloads = len(os.listdir(path))
 
 EXTRA_COL = 3
-table = "\\begin{tabular}{@{}" + 'l' * (num_workloads + EXTRA_COL) + "@{}}\n"
+table = "\\begin{tabular}{@{}" + 'l' * (num_workloads + EXTRA_COL - 1) + "r@{}}\n"
 table += "\\toprule\n"
 
-header = "Syscall Name,"
 table += "\\textbf{System Call} & "  
 for ls in os.listdir(path):
-    header += ls + ","
     table += "\\textbf{" + ls + "} & "
 table += "\\textbf{Total} & \\textbf{Avg Reduction}\\\\\n"
-header += "Total"
 table += "\\midrule\n"
 
 #print(header)
@@ -117,7 +114,7 @@ for sys,num in reduced_mapping.items():
 
 total_reduction = round(sum(total_reduction) / len(total_reduction))
 table += "\\bottomrule\n"
-table += "Average Reduction & \multicolumn{" + str(num_workloads + EXTRA_COL - 1) + "}{c}{" + str(total_reduction) +"\\%}\\\\"
+table += "Average Reduction & \multicolumn{" + str(num_workloads + EXTRA_COL - 1) + "}{r}{" + str(total_reduction) +"\\%}\\\\"
 
 table += """
 \\bottomrule

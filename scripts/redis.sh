@@ -24,31 +24,38 @@ do
 	do
 		echo "Coverage of $NUM-$ITER"
 		echo "LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf"
-		make -C $ROOT/libcoverage clean
-		make -C $ROOT/libcoverage CFLAGS=-DSYSCALL_TRACE_NUMBER=$NUM
+
+		run_cmd_startup ""
+
 		sudo LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
 		sleep 1
 		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
 		sleep 5
 		sudo kill -9 $(pgrep redis-benchmark) > /dev/null 2> /dev/null
 		sudo kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
-		sudo mkdir -p "$OUTPUT/$NUM"
-		sudo chmod a+rwx "$OUTPUT/$NUM"
-		if [ ! -e "$OUTPUT/$NUM/kcov.log" ]; then
-			touch "$OUTPUT/$NUM/kcov.log"
-		fi
-		sudo cat "/tmp/kcov.log" "$OUTPUT/$NUM/kcov.log" > "/tmp/kcovtmp"
-		sudo sort -u "/tmp/kcovtmp" > "$OUTPUT/$NUM/kcov.log"
-		sudo chmod a+rw "$OUTPUT/$NUM/kcov.log"
-		sudo rm "/tmp/kcov.log"
-		sudo rm -rf "logs/*"
+
+		run_cmd_end "kcov-exclusive.log"
 	done
+
+	for ITER in {1..5}
+	do
+		echo "Coverage of $NUM-$ITER"
+		echo "LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf"
+
+		run_cmd_startup "-DINCLUSIVE=1"
+
+		sudo LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
+		sleep 1
+		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
+		sleep 5
+		sudo kill -9 $(pgrep redis-benchmark) > /dev/null 2> /dev/null
+		sudo kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
+
+		run_cmd_end "kcov-inclusive.log"
+	done
+
 done
 
-sudo chmod -R a+rw "$OUTPUT"
 
-for NUM in $COVERAGE
-do
-	$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov.log  > $OUTPUT/$NUM/analysis.txt
-done
+run_analysis
 

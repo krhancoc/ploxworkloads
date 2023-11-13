@@ -24,6 +24,14 @@
 #error "SYSCALL_TRACE_NUMBER not defined"
 #endif
 
+// When inclusive is set, the kcov device only captures the specific system call number
+// as specified by SYSCALL_TRACE_NUMBER
+#ifdef INCLUSIVE
+#define COMPARE(a) (SYSCALL_TRACE_NUMBER == (a))
+#else
+#define COMPARE(a) (SYSCALL_TRACE_NUMBER != (a))
+#endif
+
 const size_t KCOV_BUF_SIZE =  1ul << 27; // 64 MiB
 #define KCOV_DEV_NULL (-420)
 _Thread_local int kcov_device = KCOV_DEV_NULL; // We set it to NOT -1, as mmap could have -1 as a fd arg.
@@ -41,14 +49,15 @@ char pbuffer[1024];
 void kcov_startup();
 void kcov_done();
 
+
 #define KCOV_SYS_ARG6(_name, SYS_num, return_type, arg1, arg2, arg3, arg4, arg5, arg6) \
 return_type __sys_##_name(arg1, arg2, arg3, arg4, arg5, arg6); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d, arg5 e, arg6 f) { \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d, e, f); \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -58,11 +67,11 @@ __strong_reference(__plox_##_name, _name)
 #define KCOV_SYS_ARG5(_name, SYS_num, return_type, arg1, arg2, arg3, arg4, arg5) \
 return_type __sys_##_name(arg1, arg2, arg3, arg4, arg5); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d, arg5 e) { \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d, e); \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -74,11 +83,11 @@ __strong_reference(__plox_##_name, _name)
 typedef return_type (* f_##_name)(arg1, arg2, arg3, arg4); \
 return_type __sys_##_name(arg1, arg2, arg3, arg4); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c, arg4 d) { \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c, d); \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -90,11 +99,11 @@ __strong_reference(__plox_##_name, _name)
 typedef return_type (* f_##_name)(arg1, arg2, arg3); \
 return_type __sys_##_name(arg1, arg2, arg3); \
 return_type __plox_##_name(arg1 a, arg2 b, arg3 c) { \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b, c); \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -104,11 +113,11 @@ __strong_reference(__plox_##_name, _name)
 #define KCOV_SYS_ARG2(_name, SYS_num, return_type, arg1, arg2) \
 return_type __sys_##_name(arg1, arg2); \
 return_type __plox_##_name(arg1 a, arg2 b) { \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_startup(); \
 	}; \
 	return_type returnval = __sys_##_name(a, b); \
-	if ((SYSCALL_TRACE_NUMBER == SYS_num) || (SYSCALL_TRACE_NUMBER == SYS_ALL)) { \
+	if (COMPARE(SYS_num)) { \
 		kcov_done(); \
 	}; \
 	return returnval; \
@@ -178,13 +187,13 @@ int __plox_open(const char *path, int flags, ...) {
 		return __sys_open(path, flags, mode);
 	}
 
-	if (SYSCALL_TRACE_NUMBER == SYS_open) {
+	if (COMPARE(SYS_open)) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_open(path, flags, mode);
 
-	if (SYSCALL_TRACE_NUMBER == SYS_open) {
+	if (COMPARE(SYS_open)) {
 		kcov_done();
 	}
 
@@ -203,12 +212,12 @@ int __plox_ioctl(int fd, unsigned long request, ...) {
 	if (fd == kcov_device)
 		return __sys_ioctl(fd, request, inout);
 
-	if (SYSCALL_TRACE_NUMBER == SYS_open) {
+	if (COMPARE(SYS_ioctl)) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_ioctl(fd, request, inout);
-	if (SYSCALL_TRACE_NUMBER == SYS_open) {
+	if (COMPARE(SYS_ioctl)) {
 		kcov_done();
 	}
 	return returnval;
@@ -223,12 +232,12 @@ int __plox_fcntl(int fd, int request, ...) {
 	uint64_t inout = va_arg(args, uint64_t);
 	va_end(args);
 
-	if (SYSCALL_TRACE_NUMBER == SYS_fcntl) {
+	if (COMPARE(SYS_fcntl)) {
 		kcov_startup();
 	}
 
 	int returnval = __sys_fcntl(fd, request, inout);
-	if (SYSCALL_TRACE_NUMBER == SYS_fcntl) {
+	if (COMPARE(SYS_fcntl)) {
 		kcov_done();
 	}
 	return returnval;
@@ -238,35 +247,33 @@ __strong_reference(__plox_fcntl, fcntl);
 
 
 void kcov_startup() {
-	if (kcov_device == KCOV_DEV_NULL) {
-		kcov_device = __sys_open("/dev/kcov", O_RDWR, 0);
-		if (kcov_device == -1)  {
-			printf("Problem loading kcov device %d", errno);
-			exit(-1);
-		}
-
-		if (syscall(SYS_ioctl, kcov_device, KIOSETBUFSIZE, KCOV_BUF_SIZE / KCOV_ENTRY_SIZE) != 0) {
-			perror("Problem with ioctl");
-			exit(-1);
-		}
-
-		kcov_log = __sys_open(KCOV_LOG, O_WRONLY | O_APPEND | O_CREAT, 0666);
-		if (kcov_log == -1 && errno == EPERM)
-			kcov_log = syscall(SYS_open, KCOV_LOG, O_WRONLY | O_APPEND);
-
-		if (kcov_log == -1) {
-			perror("Problem opening kcov log");
-			exit(-1);
-		}
-
-		kcov_buf = __sys_mmap(NULL, KCOV_BUF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, kcov_device, 0);
-		if (kcov_buf == MAP_FAILED) {
-			perror("Problem mapping kcov buf");
-			exit(-1);
-		}
+	kcov_device = __sys_open("/dev/kcov", O_RDWR, 0);
+	if (kcov_device == -1)  {
+		printf("Problem loading kcov device %d", errno);
+		exit(-1);
 	}
 
-	if (ioctl(kcov_device, KIOENABLE, KCOV_MODE_TRACE_PC) != 0) {
+	if (syscall(SYS_ioctl, kcov_device, KIOSETBUFSIZE, KCOV_BUF_SIZE / KCOV_ENTRY_SIZE) != 0) {
+		perror("Problem with ioctl");
+		exit(-1);
+	}
+
+	kcov_log = __sys_open(KCOV_LOG, O_WRONLY | O_APPEND | O_CREAT, 0666);
+	if (kcov_log == -1 && errno == EEXIST)
+		kcov_log = syscall(SYS_open, KCOV_LOG, O_WRONLY | O_APPEND);
+
+	if (kcov_log == -1) {
+		perror("Problem opening kcov log");
+		exit(-1);
+	}
+
+	kcov_buf = __sys_mmap(NULL, KCOV_BUF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, kcov_device, 0);
+	if (kcov_buf == MAP_FAILED) {
+		perror("Problem mapping kcov buf");
+		exit(-1);
+	}
+
+	if (syscall(SYS_ioctl, kcov_device, KIOENABLE, KCOV_MODE_TRACE_PC) != 0) {
 		perror("Problem with KIOENABLE");
 	}
 
@@ -277,7 +284,8 @@ void kcov_startup() {
 void kcov_done() {
 	char buf[256];
 
-	if (ioctl(kcov_device, KIODISABLE, 0) != 0) {
+	if (syscall(SYS_ioctl, kcov_device, KIODISABLE, 0) != 0) {
+		PRINTF("%d\n", kcov_device);
 		perror("Problem with KIODISABLE");
 	}
 
@@ -285,6 +293,10 @@ void kcov_done() {
 		snprintf(buf, 256, "%#jx\n", (uintmax_t)kcov_buf[i]) ;
 		__sys_write(kcov_log, buf, strlen(buf));
 	}
+
+	munmap(kcov_buf, KCOV_BUF_SIZE);
+	close(kcov_log);
+	close(kcov_device);
 
 	return;
 }
