@@ -4,22 +4,24 @@ ROOT=$(realpath "$(dirname "$0")/..")
 
 cd $ROOT
 
-# Lighttpd setup
-wget https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-1.4.72.tar.gz
-tar xzf lighttpd-1.4.72.tar.gz
-rm lighttpd-1.4.72.tar.gz
-
-# WRK Setup
-git clone https://github.com/wg/wrk.git --depth=1
-rm -rf wrk/.git
-
-# Memcached Setup
-MCACHED="libmemcached-1.0.18"
-wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz
-tar xzf $MCACHED.tar.gz
-rm $MCACHED.tar.gz
-cd $MCACHED
-patch -p1 <../$MCACHED.patch
+#sudo pkg install wget gmake cmake autoreconf automake autotools pkgconf gcc
+#
+# # Lighttpd setup
+# wget https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-1.4.72.tar.gz
+# tar xzf lighttpd-1.4.72.tar.gz
+# rm lighttpd-1.4.72.tar.gz
+#
+# # WRK Setup
+# git clone https://github.com/wg/wrk.git --depth=1
+# rm -rf wrk/.git
+#
+# # Memcached Setup
+# MCACHED="libmemcached-1.0.18"
+# wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz
+# tar xzf $MCACHED.tar.gz
+# rm $MCACHED.tar.gz
+# cd $MCACHED
+# patch -p1 <../$MCACHED.patch
 sudo pkg install memcached
 
 

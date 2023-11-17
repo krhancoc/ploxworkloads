@@ -8,7 +8,6 @@ all: $(SUBDIRS) $(REQGMAKE) $(GOBUILD)
 .PHONY: all $(SUBDIRS) $(REQGMAKE) $(GOBUILD)
 
 configure:
-	cd lighttpd-1.4.72; autoreconf -f
 	cd lighttpd-1.4.72; ./configure
 	cd libmemcached-1.0.18; ./configure --enable-memaslap
 
