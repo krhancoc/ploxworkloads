@@ -23,26 +23,26 @@ kill -9 $(pgrep nginx) > /dev/null 2> /dev/null
 
 for NUM in $COVERAGE
 do
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		run_cmd_startup ""
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $NGINX -c "$CONFIG" -e "$ROOT/logs/error.log" &
-		sleep 2
-		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
+		sleep 5
+		$WRK -t 2 -c 10 -d 60s --latency "http://127.0.0.1:19999" > /dev/null
 		sudo kill -3 $(pgrep nginx)
 		sleep 1
 
 		run_cmd_end "kcov-exclusive.log"
 	done
 
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		run_cmd_startup "-DINCLUSIVE=1"
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $NGINX -c "$CONFIG" -e "$ROOT/logs/error.log" &
-		sleep 2
-		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
+		sleep 5
+		$WRK -t 2 -c 10 -d 60s --latency "http://127.0.0.1:19999" > /dev/null
 		sudo kill -3 $(pgrep nginx)
 		sleep 1
 

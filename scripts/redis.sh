@@ -28,9 +28,9 @@ do
 		run_cmd_startup ""
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
-		sleep 1
-		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
 		sleep 5
+		$BENCH -h 127.0.0.1 -n 1000000 -p 19999 -q -c 10 > /dev/null &
+		sleep 60
 		sudo kill -9 $(pgrep redis-benchmark) > /dev/null 2> /dev/null
 		sudo kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
 
@@ -45,9 +45,9 @@ do
 		run_cmd_startup "-DINCLUSIVE=1"
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $REDIS $ROOT/configs/redis.conf
-		sleep 1
-		$BENCH -h 127.0.0.1 -p 19999 -q -c 10 > /dev/null &
 		sleep 5
+		$BENCH -h 127.0.0.1 -n 1000000 -p 19999 -q -c 10 > /dev/null &
+		sleep 60
 		sudo kill -9 $(pgrep redis-benchmark) > /dev/null 2> /dev/null
 		sudo kill -9 $(pgrep $REDIS) > /dev/null 2> /dev/null
 
@@ -55,7 +55,3 @@ do
 	done
 
 done
-
-
-run_analysis
-

@@ -58,7 +58,7 @@ run_analysis() {
 	for NUM in $COVERAGE
 	do
 		echo "Analysis of $NUM"
-		$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov-exclusive.log  > $OUTPUT/$NUM/analysis-exclusive.txt
-		$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov-inclusive.log  > $OUTPUT/$NUM/analysis-inclusive.txt
+		$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov-exclusive.log  > $OUTPUT/$NUM/analysis-exclusive.txt 
+		$ROOT/bcpi/scripts/analyze-kcov.sh -a KcovAnalysis $ROOT/bcpi/kernel.full $OUTPUT/$NUM/kcov-inclusive.log  > $OUTPUT/$NUM/analysis-inclusive.txt 
 	done
 }

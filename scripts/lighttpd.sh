@@ -24,7 +24,7 @@ kill -9 $(pgrep lighttpd) > /dev/null 2> /dev/null
 
 for NUM in $COVERAGE
 do
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		echo "Coverage of $NUM-$ITER"
 		echo "LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
@@ -32,13 +32,15 @@ do
 		run_cmd_startup ""
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
-		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
+		$WRK -t 2 -c 10 -d 120s --latency "http://127.0.0.1:19999" > /dev/null
 		sudo kill -9 $(pgrep lighttpd)
 
 		run_cmd_end "kcov-exclusive.log"
+
+		sudo rm -rf $ROOT/logs/*
 	done
 
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		echo "Coverage of $NUM-$ITER"
 		echo "LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG"
@@ -46,13 +48,13 @@ do
 		run_cmd_startup "-DINCLUSIVE=1"
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $LIGHTTPD -f $CONFIG > /dev/null
-		$WRK -t 2 -c 10 -d 5s --latency "http://127.0.0.1:19999" > /dev/null
+		$WRK -t 2 -c 10 -d 120s --latency "http://127.0.0.1:19999" > /dev/null
 		sudo kill -9 $(pgrep lighttpd)
 
 		run_cmd_end "kcov-inclusive.log"
+
+		sudo rm -rf $ROOT/logs/*
 	done
 
 done
-
-run_analysis
 

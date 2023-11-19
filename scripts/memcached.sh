@@ -21,7 +21,7 @@ kill -9 $(pgrep memcached) > /dev/null 2> /dev/null
 
 for NUM in $COVERAGE
 do
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		echo "Coverage of $NUM-$ITER"
 		echo "LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -l 127.0.0.1 -p 19999"
@@ -29,14 +29,16 @@ do
 		run_cmd_startup ""
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -u root -l 127.0.0.1 -p 19999 &
-		sleep 1
-		$MEMSLAP -s 127.0.0.1:19999 > /dev/null
+		sleep 5
+		$MEMSLAP -s 127.0.0.1:19999 & > /dev/null
+		sleep 60
+		sudo kill -9 $(pgrep memslap) > /dev/null 2> /dev/null
 		sudo kill -9 $(pgrep memcached) > /dev/null 2> /dev/null
 
 		run_cmd_end "kcov-exclusive.log"
 	done
 
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		echo "Coverage of $NUM-$ITER"
 		echo "LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -l 127.0.0.1 -p 19999"
@@ -44,15 +46,13 @@ do
 		run_cmd_startup "-DINCLUSIVE=1"
 
 		sudo LD_PRELOAD=$LIBCOVERAGE $MEMCACHED -u root -l 127.0.0.1 -p 19999 &
-		sleep 1
-		$MEMSLAP -s 127.0.0.1:19999 > /dev/null
+		sleep 5
+		$MEMSLAP -s 127.0.0.1:19999 & > /dev/null
+		sleep 60
+		sudo kill -9 $(pgrep memslap) > /dev/null 2> /dev/null
 		sudo kill -9 $(pgrep memcached) > /dev/null 2> /dev/null
 
 		run_cmd_end "kcov-inclusive.log"
 	done
 
 done
-
-
-run_analysis
-
