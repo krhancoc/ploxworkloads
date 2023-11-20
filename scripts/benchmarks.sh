@@ -62,7 +62,7 @@ memcached_benchmark()
 
 	touch $OUTPUT
 
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		run_memcached &
 
@@ -78,7 +78,7 @@ memcached_benchmark()
 		sleep 2
 	done
 
-	for ITER in {1..5}
+	for ITER in {1..10}
 	do
 		kldload $PLOXD/kplox/kmod/plox.ko
 		$PLOXD/build/src/ploxd/ploxd &
