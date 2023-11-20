@@ -80,14 +80,63 @@ def lighttpd_data(filename):
     davg = np.mean(default)
     return ((davg - pavg) / davg) * 100
 
+def get_sqlite_data(data_str):
+    entries = data_str.split("\n\n")
+    data = {
+        "inserts": [],
+        "selects": [],
+        "updates": [],
+        "deletes": [],
+    }
+
+    for entry in entries:
+        entry = entry.split("\n")
+        if len(entry) == 0:
+            continue
+
+        if entry[0] == '':
+            continue
+
+        key = entry[0].split()[0]
+        if key == "total:":
+            continue
+        data[key].append(float(entry[2].split()[0]))
+
+    data = {k : np.array(v) for k, v in data.items()}
+    data = {k : (np.mean(v), np.std(v)) for k, v in data.items()}
+
+    return data
+
+
+def sqlite_data(filename):
+    with open(filename) as f:
+        data = "".join(f.readlines())
+        data = data.split("PLOX")
+        default = data[0]
+        default = get_sqlite_data(default)
+        plox = data[1][1:]
+        plox = get_sqlite_data(plox)
+
+    final_data = {}
+    keys = list(default.keys())
+    for k in keys:
+        final_data_mean = ((default[k][0] - plox[k][0]) / default[k][0]) * 100
+        final_data[k] = final_data_mean
+
+    v = np.array(list(final_data.values()))
+
+    return np.mean(v)
+
+
 fig, ax =  plt.subplots(layout="constrained")
 
 rmean_ke, _ = redis_data("out/redis.csv")
 rmean, _ = redis_data("out/redis-withoutkevent.csv")
 lmean = lighttpd_data("out/lighttpd.csv")
+smean = sqlite_data("out/sqlite.csv")
 
-labels = ["redis+ke", "redis-ke", "lighttpd"]
-ax.bar(labels, [rmean_ke, rmean, lmean], label=labels, color=["red"])
+labels = ["redis+ke", "redis-ke", "lighttpd", "sqlite"]
+ax.bar(labels, [rmean_ke, rmean, lmean, smean], label=labels, color=["red"])
 
 ax.set_ylabel('Overhead (\%)')
 

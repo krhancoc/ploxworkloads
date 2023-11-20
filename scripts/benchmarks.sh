@@ -51,7 +51,6 @@ lighttpd_benchmark()
 
 redis_benchmark()
 {
-
 	ROOT=$(realpath "$(dirname "$0")/..")
 	. $ROOT/scripts/util.sh
 
@@ -109,5 +108,51 @@ redis_benchmark()
 	done
 
 	chmod a+rw $OUTPUT
+
+}
+
+sqlite_benchmark()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
+
+	PLOXD=/usr/home/ryan/ploxd
+
+	mkdir -p $ROOT/out
+
+	OUTPUT=$ROOT/out/sqlite.csv
+
+	touch $OUTPUT
+
+	for ITER in {1..5}
+	do
+		echo "Default - $ITER"
+		run_sqlite >> $OUTPUT
+		echo "" >> $OUTPUT
+	done
+
+	echo "PLOX" >> $OUTPUT
+	for ITER in {1..5}
+	do
+		echo "PLOX - $ITER"
+		kldload $PLOXD/kplox/kmod/plox.ko
+
+		$PLOXD/build/src/ploxd/ploxd &
+
+		run_sqlite >> $OUTPUT
+
+		echo "" >> $OUTPUT
+
+		sleep 5
+
+		kill -SIGKILL `pgrep ploxd`
+
+		sleep 1
+
+		kldunload plox.ko
+
+		sleep 1
+	done
+
 
 }

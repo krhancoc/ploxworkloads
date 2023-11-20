@@ -21,6 +21,28 @@ run_lighttpd() {
 	sudo $LIGHTTPD -f $CONFIG -D
 }
 
+run_sqlite() {
+	ROOT=$(realpath "$(dirname "$0")/..")
+	source $ROOT/scripts/syscalls.sh
+
+	DBBENCH="$ROOT/dbbench-0.6.10/dbbench"
+
+
+	$DBBENCH sqlite --iter 1000 --threads 4
+}
+
+run_sqlite_with_plox() {
+	ROOT=$(realpath "$(dirname "$0")/..")
+	source $ROOT/scripts/syscalls.sh
+
+	DBBENCH="$ROOT/dbbench-0.6.10/dbbench"
+
+
+	sudo $PLOXD/build/src/ploxd/plox $DBBENCH sqlite --iter 3 --threads 4
+}
+
+
+
 run_redis()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")
