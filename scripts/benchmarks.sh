@@ -49,6 +49,59 @@ lighttpd_benchmark()
 	done
 }
 
+nginx_benchmark()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
+
+	PLOXD=/usr/home/ryan/ploxd
+
+	mkdir -p $ROOT/out
+
+	OUTPUT=$ROOT/out/nginx.csv
+
+	touch $OUTPUT
+
+	# for ITER in {1..5}
+	# do
+	# 	run_nginx &
+	#
+	# 	sleep 5
+	#
+	# 	VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
+	# 	echo "default, $VALUE," >> $OUTPUT
+	# 	sleep 3
+	#
+	# 	kill -9 `pgrep nginx`
+	# done
+
+	for ITER in {1..5}
+	do
+		kldload $PLOXD/kplox/kmod/plox.ko
+		$PLOXD/build/src/ploxd/ploxd &
+
+		run_nginx_with_plox
+
+		sleep 5
+
+		VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
+		echo "plox, $VALUE," >> $OUTPUT
+
+		sleep 1
+
+		kill -9 `pgrep nginx`
+
+		sleep 1
+
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+
+		kldunload plox.ko
+	done
+}
+
 redis_benchmark()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")

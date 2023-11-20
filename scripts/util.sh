@@ -42,6 +42,21 @@ run_sqlite_with_plox() {
 }
 
 
+run_nginx()
+{
+	NGINX="nginx"
+	CONFIG="$ROOT/configs/nginx.conf"
+
+	sudo $NGINX -c "$CONFIG" -e "$ROOT/logs/error.log"
+}
+
+run_nginx_with_plox()
+{
+	NGINX=$(which nginx)
+	CONFIG="$ROOT/configs/nginx.conf"
+
+	sudo $PLOXD/build/src/ploxd/plox $NGINX -c "$CONFIG" -e "$ROOT/logs/error.log"
+}
 
 run_redis()
 {

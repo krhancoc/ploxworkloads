@@ -62,7 +62,7 @@ def redis_data(filename):
 
     return avg, std
 
-def lighttpd_data(filename):
+def wrk_data(filename):
     plox = []
     default = []
     with open(filename) as f:
@@ -132,11 +132,12 @@ fig, ax =  plt.subplots(layout="constrained")
 
 rmean_ke, _ = redis_data("out/redis.csv")
 rmean, _ = redis_data("out/redis-withoutkevent.csv")
-lmean = lighttpd_data("out/lighttpd.csv")
+lmean = wrk_data("out/lighttpd.csv")
+nmean = wrk_data("out/nginx.csv")
 smean = sqlite_data("out/sqlite.csv")
 
-labels = ["redis+ke", "redis-ke", "lighttpd", "sqlite"]
-ax.bar(labels, [rmean_ke, rmean, lmean, smean], label=labels, color=["red"])
+labels = ["redis+ke", "redis-ke", "lighttpd", "sqlite", "nginx"]
+ax.bar(labels, [rmean_ke, rmean, lmean, smean, nmean], label=labels, color=["red"])
 
 ax.set_ylabel('Overhead (\%)')
 
