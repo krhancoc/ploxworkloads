@@ -31,7 +31,8 @@ run_redis()
 run_redis_with_plox()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")
-	REDIS="redis-server"
+	# Need full path for PLOX
+	REDIS=$(which redis-server)
 	sudo $PLOXD/build/src/ploxd/plox $REDIS $ROOT/configs/redis.conf
 }
 
@@ -40,7 +41,7 @@ run_redis_benchmark()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")
 	BENCH="redis-benchmark"
-	$BENCH -h 127.0.0.1 -p 19999 -q -c 10 -n 25000 --csv
+	$BENCH -h 127.0.0.1 -p 19999 -q -c 10 -n 50000 --csv
 }
 
 

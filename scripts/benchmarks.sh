@@ -2,94 +2,112 @@
 
 lighttpd_benchmark()
 {
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
 
-ROOT=$(realpath "$(dirname "$0")/..")
-. $ROOT/scripts/util.sh
+	PLOXD=/usr/home/ryan/ploxd
 
-PLOXD=/usr/home/ryan/ploxd
+	mkdir -p $ROOT/out
 
-mkdir -p $ROOT/out
+	OUTPUT=$ROOT/out/lighttpd.csv
 
-OUTPUT=$ROOT/out/lighttpd.csv
+	touch $OUTPUT
 
-touch $OUTPUT
+	for ITER in {1..5}
+	do
+		run_lighttpd &
 
-kldload $PLOXD/kplox/kmod/plox.ko
-$PLOXD/build/src/ploxd/ploxd &
+		sleep 5
 
-run_lighttpd_with_plox
+		VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
+		echo "default, $VALUE," >> $OUTPUT
+		sleep 3
 
-sleep 5
+		kill -9 `pgrep lighttpd`
+	done
 
-for ITER in {1..5}
-do
-  echo "Lighttpd-with-plox $ITER"
-  VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
-  echo "plox, $VALUE," >> $OUTPUT
-  sleep 3
-done
+	for ITER in {1..5}
+	do
+		kldload $PLOXD/kplox/kmod/plox.ko
+		$PLOXD/build/src/ploxd/ploxd &
 
-kill -SIGINT `pgrep ploxd`
-sleep 1
-kill -SIGINT `pgrep ploxd`
-sleep 1
+		run_lighttpd_with_plox
 
-run_lighttpd &
+		sleep 5
 
-for ITER in {1..5}
-do
-  VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
-  echo "default, $VALUE," >> $OUTPUT
-  sleep 3
-done
+		echo "Lighttpd-with-plox $ITER"
+		VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
+		echo "plox, $VALUE," >> $OUTPUT
+		sleep 3
 
-kill -9 `pgrep lighttpd`
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
 
+		kldunload plox.ko
+	done
 }
 
 redis_benchmark()
 {
 
-ROOT=$(realpath "$(dirname "$0")/..")
-. $ROOT/scripts/util.sh
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
 
-PLOXD=/usr/home/ryan/ploxd
+	PLOXD=/usr/home/ryan/ploxd
 
-mkdir -p $ROOT/out
+	mkdir -p $ROOT/out
 
-OUTPUT=$ROOT/out/redis.csv
+	OUTPUT=$ROOT/out/redis.csv
 
-touch $OUTPUT
+	touch $OUTPUT
 
-kldload $PLOXD/kplox/kmod/plox.ko
-$PLOXD/build/src/ploxd/ploxd &
+	for ITER in {1..5}
+	do
+		run_redis
 
-run_redis_with_plox
+		sleep 5
 
-sleep 5
+		echo "redis-benchmark $ITER"
+		run_redis_benchmark >> $OUTPUT
+		echo "" >> $OUTPUT
 
-for ITER in {1..5}
-do
-  echo "redis-benchmark $ITER"
-  run_redis_benchmark >> $OUTPUT
-done
+		redis-cli -h 127.0.0.1 -p 19999 shutdown
 
-kill -SIGINT `pgrep ploxd`
-sleep 1
-kill -SIGINT `pgrep ploxd`
-sleep 1
+		sleep 5
 
-run_redis &
+		rm $ROOT/scripts/dump.rdb
+	done
 
-sleep 5
+	echo "PLOX" >> $OUTPUT
+	for ITER in {1..5}
+	do
+		kldload $PLOXD/kplox/kmod/plox.ko
 
-for ITER in {1..5}
-do
-  echo "redis-benchmark $ITER"
-  run_redis_benchmark >> $OUTPUT
-done
+		$PLOXD/build/src/ploxd/ploxd &
 
-kill -9 `pgrep redis`
+		run_redis_with_plox
+
+		sleep 5
+
+		echo "redis-benchmark $ITER"
+		run_redis_benchmark >> $OUTPUT
+		echo "" >> $OUTPUT
+
+		redis-cli -h 127.0.0.1 -p 19999 shutdown
+
+		sleep 5
+
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+
+		rm $ROOT/scripts/dump.rdb
+		kldunload plox.ko
+	done
+
+	chmod a+rw $OUTPUT
+
 }
-
-redis_benchmark
