@@ -4,7 +4,7 @@ ROOT=$(realpath "$(dirname "$0")/..")
 source $ROOT/scripts/syscalls.sh
 
 DIRNAME="libmemcached-1.0.18"
-MEMSLAP="$ROOT/$DIRNAME/clients/memslap"
+MEMSLAP="memslap"
 LIBCOVERAGE="$ROOT/libcoverage/libcoverage.so"
 MEMCACHED="memcached"
 

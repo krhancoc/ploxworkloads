@@ -1,6 +1,6 @@
 CC = clang
 SUBDIRS := lighttpd-1.4.72
-REQGMAKE := wrk libmemcached-1.0.18
+REQGMAKE := wrk
 GOBUILD := dbbench-0.6.10
 
 all: $(SUBDIRS) $(REQGMAKE) $(GOBUILD)
@@ -9,7 +9,6 @@ all: $(SUBDIRS) $(REQGMAKE) $(GOBUILD)
 
 configure:
 	cd lighttpd-1.4.72; ./configure
-	cd libmemcached-1.0.18; ./configure --enable-memaslap
 
 distclean:
 	$(MAKE) -C lighttpd-1.4.72 distclean

@@ -49,6 +49,59 @@ lighttpd_benchmark()
 	done
 }
 
+memcached_benchmark()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
+
+	PLOXD=/usr/home/ryan/ploxd
+
+	mkdir -p $ROOT/out
+
+	OUTPUT=$ROOT/out/memcached.csv
+
+	touch $OUTPUT
+
+	for ITER in {1..5}
+	do
+		run_memcached &
+
+		sleep 5
+
+		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7}')
+		echo "default, $VALUE," >> $OUTPUT
+
+		sleep 1
+
+		kill -9 `pgrep memcached`
+
+		sleep 2
+	done
+
+	for ITER in {1..5}
+	do
+		kldload $PLOXD/kplox/kmod/plox.ko
+		$PLOXD/build/src/ploxd/ploxd &
+
+		run_memcached_with_plox
+
+		sleep 5
+
+		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7}')
+		echo "plox, $VALUE," >> $OUTPUT
+		sleep 1
+
+		kill -9 `pgrep memcached`
+
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+		kill -SIGINT `pgrep ploxd`
+		sleep 1
+
+		kldunload plox.ko
+	done
+}
+
 nginx_benchmark()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")

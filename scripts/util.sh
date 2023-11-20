@@ -31,6 +31,31 @@ run_sqlite() {
 	$DBBENCH sqlite --iter 1000 --threads 4
 }
 
+run_memcached()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	MEMCACHED="memcached"
+	sudo $MEMCACHED -u root -l 127.0.0.1 -p 19999 
+}
+
+run_memaslap()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	DIRNAME="libmemcached-1.0.18"
+	MEMASLAP="memaslap"
+
+	$MEMASLAP -s 127.0.0.1:19999 -t 60s
+}
+
+run_memcached_with_plox()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	MEMCACHED=$(which memcached)
+
+	sudo $PLOXD/build/src/ploxd/plox $MEMCACHED -u root -l 127.0.0.1 -p 19999 
+}
+
+
 run_sqlite_with_plox() {
 	ROOT=$(realpath "$(dirname "$0")/..")
 	source $ROOT/scripts/syscalls.sh
