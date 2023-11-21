@@ -127,21 +127,53 @@ def sqlite_data(filename):
 
     return np.mean(v)
 
+def pull_values(data):
+    data = data.split()[2:]
+    d = {}
+    print(data)
+    for x in range(0, len(data), 2):
+        d[data[x]] = int(data[x+1])
 
-fig, ax =  plt.subplots(layout="constrained")
+    return d
 
-rmean, _ = redis_data("out/redis.csv")
-lmean = wrk_data("out/lighttpd.csv")
-nmean = wrk_data("out/nginx.csv")
-mmean = wrk_data("out/memcached.csv")
-smean = sqlite_data("out/sqlite.csv")
+def breakdown_data(filename):
+    final_data = {}
+    with open(filename) as f:
+        data = "".join(f.readlines())
+        data = data.split("\n\n")[:3]
 
-labels = ["redis", "lighttpd", "sqlite", "nginx", "memcached"]
-data = [rmean, lmean, smean, nmean, mmean]
-ax.bar(labels, data , label=labels, color=["red"])
-print("Avg Overhead", np.mean(data))
+    capcheck_sum = pull_values(data[0])
+    syscall_sum = pull_values(data[1])
+    counts = pull_values(data[2])
+    total = sum(counts.values())
 
-ax.set_ylabel('Overhead (\%)')
+    weight_average = {}
+    for k in capcheck_sum.keys():
+        # Calculate overhead
+        t = (float(capcheck_sum[k]) + float(syscall_sum[k])) / float(syscall_sum[k])
+        # Weighted average
+        t = t * (float(counts[k]) / float(total))
+        weight_average[k] = t
+    print(weight_average)
 
-fig.savefig("graphs/perf.png")
+# fig, ax =  plt.subplots(layout="constrained")
+#
+# rmean, _ = redis_data("out/redis.csv")
+# lmean = wrk_data("out/lighttpd.csv")
+# nmean = wrk_data("out/nginx.csv")
+# mmean = wrk_data("out/memcached.csv")
+# smean = sqlite_data("out/sqlite.csv")
+#
+# labels = ["redis", "lighttpd", "sqlite", "nginx", "memcached"]
+# data = [rmean, lmean, smean, nmean, mmean]
+# ax.bar(labels, data , label=labels, color=["red"])
+# print("Avg Overhead", np.mean(data))
+#
+# ax.set_ylabel('Overhead (\%)')
+#
+# fig.savefig("graphs/perf.png")
+#
 
+fig, ax = plt.subplots(layout="constrained")
+rbreakdown = breakdown_data("out/redis.dtrace")
+sbreakdown = breakdown_data("out/sqlite.dtrace")
