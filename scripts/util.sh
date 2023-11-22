@@ -1,4 +1,8 @@
 #/usr/bin/env bash
+build_kplox() {
+	make -C $PLOXD/kplox -j 8 clean
+	CFLAGS="\"$1\"" make -C $PLOXD/kplox -j 8
+}
 
 run_lighttpd_with_plox() {
 	ROOT=$(realpath "$(dirname "$0")/..")

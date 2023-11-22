@@ -68,7 +68,7 @@ memcached_benchmark()
 
 		sleep 5
 
-		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7}')
+		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7","$5","$9}')
 		echo "default, $VALUE," >> $OUTPUT
 
 		sleep 1
@@ -87,7 +87,7 @@ memcached_benchmark()
 
 		sleep 5
 
-		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7}')
+		VALUE=$(run_memaslap | tail -n 1 | awk -F' ' '{print $7","$5","$9}')
 		echo "plox, $VALUE," >> $OUTPUT
 		sleep 1
 
@@ -115,18 +115,18 @@ nginx_benchmark()
 
 	touch $OUTPUT
 
-	# for ITER in {1..5}
-	# do
-	# 	run_nginx &
-	#
-	# 	sleep 5
-	#
-	# 	VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
-	# 	echo "default, $VALUE," >> $OUTPUT
-	# 	sleep 3
-	#
-	# 	kill -9 `pgrep nginx`
-	# done
+	for ITER in {1..5}
+	do
+		run_nginx &
+
+		sleep 5
+
+		VALUE=$(run_wrk | grep "Requests/sec" | awk -F':' '{print $2}')
+		echo "default, $VALUE," >> $OUTPUT
+		sleep 3
+
+		kill -9 `pgrep nginx`
+	done
 
 	for ITER in {1..5}
 	do
@@ -230,7 +230,7 @@ sqlite_benchmark()
 
 	touch $OUTPUT
 
-	for ITER in {1..5}
+	for ITER in {1..3}
 	do
 		echo "Default - $ITER"
 		run_sqlite >> $OUTPUT
@@ -239,23 +239,21 @@ sqlite_benchmark()
 
 	echo "PLOX" >> $OUTPUT
 
-	for ITER in {1..t}
+	for ITER in {1..3}
 	do
 		echo "PLOX - $ITER"
+		build_kplox
+
 		kldload $PLOXD/kplox/kmod/plox.ko
 
 		$PLOXD/build/src/ploxd/ploxd >> $OUTPUT &
 
 		run_sqlite_with_plox
 
-		dtrace -s $PLOXD/kplox/scripts/plox.d -o dtrace.out &
-
 		# Hack for now
 		sleep 20
 
 		echo "" >> $OUTPUT
-
-		kill -SIGINT `pgrep dtrace`
 
 		sleep 5
 
@@ -269,6 +267,35 @@ sqlite_benchmark()
 		sleep 1
 	done
 
+	echo "PLOX" >> $OUTPUT
+
+	for ITER in {1..3}
+	do
+		echo "PLOX - $ITER"
+		build_kplox "-DDISABLE_READ=1 -DDISABLE_WRITE=1"
+
+		kldload $PLOXD/kplox/kmod/plox.ko
+
+		$PLOXD/build/src/ploxd/ploxd >> $OUTPUT &
+
+		run_sqlite_with_plox
+
+		# Hack for now
+		sleep 20
+
+		echo "" >> $OUTPUT
+
+		sleep 5
+
+		kill -SIGKILL `pgrep ploxd`
+
+		sleep 1
+
+		kldunload plox.ko
+
+		rm dbbench.sqlite*
+		sleep 1
+	done
 
 }
 
@@ -291,7 +318,7 @@ redis_dtrace()
 
 	sleep 5
 
-	run_redis_benchmark >> /dev/null
+	run_redis_benchmark > /tmp/output
 
 	redis-cli -h 127.0.0.1 -p 19999 shutdown
 
@@ -307,7 +334,10 @@ redis_dtrace()
 	rm $ROOT/scripts/dump.rdb
 	kldunload plox.ko
 
-	mv dtrace.out $ROOT/out/redis.dtrace
+	echo "RESULTS" >> dtrace.out
+	cat dtrace.out /tmp/output > $ROOT/out/redis.dtrace
+	rm dtrace.out	
+	rm /tmp/output
 }
 
 sqlite_dtrace()
@@ -323,7 +353,7 @@ sqlite_dtrace()
 
 	kldload $PLOXD/kplox/kmod/plox.ko
 
-	$PLOXD/build/src/ploxd/ploxd  &
+	$PLOXD/build/src/ploxd/ploxd  > /tmp/output &
 
 	run_sqlite_with_plox
 
@@ -345,6 +375,46 @@ sqlite_dtrace()
 	rm dbbench.sqlite*
 	sleep 1
 
-	mv dtrace.out $ROOT/out/sqlite.dtrace
+	echo "RESULTS" >> dtrace.out
+	cat dtrace.out /tmp/output > $ROOT/out/sqlite.dtrace
+	rm dtrace.out	
+	rm /tmp/output
+}
 
+memcached_dtrace()
+{
+	ROOT=$(realpath "$(dirname "$0")/..")
+	. $ROOT/scripts/util.sh
+
+	PLOXD=/usr/home/ryan/ploxd
+
+	mkdir -p $ROOT/out
+
+	kldload $PLOXD/kplox/kmod/plox.ko
+	$PLOXD/build/src/ploxd/ploxd &
+
+	run_memcached_with_plox
+
+	sleep 5
+
+	dtrace -s $PLOXD/kplox/scripts/plox.d -o dtrace.out &
+
+	run_memaslap > /tmp/output
+
+	kill -9 `pgrep memcached`
+
+	kill -SIGINT `pgrep dtrace`
+
+	kill -SIGINT `pgrep ploxd`
+	sleep 1
+	kill -SIGINT `pgrep ploxd`
+	sleep 1
+
+	kldunload plox.ko
+
+	echo "RESULTS" >> dtrace.out
+	cat dtrace.out /tmp/output > $ROOT/out/memcached.dtrace
+
+	rm dtrace.out
+	rm /tmp/output
 }

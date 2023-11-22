@@ -107,6 +107,15 @@ def get_sqlite_data(data_str):
 
     return data
 
+def calculate_sqlite_overhead(default, plox):
+    final_data = {}
+    keys = list(default.keys())
+    for k in keys:
+        final_data_mean = ((default[k][0] - plox[k][0]) / default[k][0]) * 100
+        final_data[k] = final_data_mean
+
+    return np.array(list(final_data.values()))
+
 
 def sqlite_data(filename):
     with open(filename) as f:
@@ -115,65 +124,114 @@ def sqlite_data(filename):
         default = data[0]
         default = get_sqlite_data(default)
         plox = data[1][1:]
+        ploxopt = data[2][1:]
         plox = get_sqlite_data(plox)
+        ploxopt = get_sqlite_data(ploxopt)
 
-    final_data = {}
-    keys = list(default.keys())
-    for k in keys:
-        final_data_mean = ((default[k][0] - plox[k][0]) / default[k][0]) * 100
-        final_data[k] = final_data_mean
+    plox = calculate_sqlite_overhead(default, plox)
+    ploxopt = calculate_sqlite_overhead(default, ploxopt)
 
-    v = np.array(list(final_data.values()))
-
-    return np.mean(v)
+    return np.mean(plox), np.mean(ploxopt)
 
 def pull_values(data):
     data = data.split()[2:]
     d = {}
-    print(data)
+    fs = 0
     for x in range(0, len(data), 2):
-        d[data[x]] = int(data[x+1])
+        d[data[x]] = float(data[x+1])
+        fs += float(data[x+1])
+    #d["total"] = fs
 
     return d
 
-def breakdown_data(filename):
+def memcached_res(results):
+    results = results.split("\n")[-2].split()
+    tps = float(results[6])
+    time = float(results[2][:-1])
+    return time * tps
+
+# Every operation is done 50k times
+def redis_res(results):
+    return len(results.split("\n")[2:-1]) * 50000
+
+def sqlite_res(results):
+    results = results[1:-1].split("\n\n")
+    sections = len(results)
+
+    # One section is just the totals
+    amount = int(results[0].split()[1][1:-2]) - 1
+    return sections * amount
+
+
+def breakdown_data(filename, func):
     final_data = {}
     with open(filename) as f:
         data = "".join(f.readlines())
-        data = data.split("\n\n")[:3]
+        data = data.split("RESULTS")
+        totaltransactions = func(data[1])
+        data = data[0].split("\n\n")[:3]
 
     capcheck_sum = pull_values(data[0])
     syscall_sum = pull_values(data[1])
     counts = pull_values(data[2])
     total = sum(counts.values())
 
-    weight_average = {}
-    for k in capcheck_sum.keys():
-        # Calculate overhead
-        t = (float(capcheck_sum[k]) + float(syscall_sum[k])) / float(syscall_sum[k])
-        # Weighted average
-        t = t * (float(counts[k]) / float(total))
-        weight_average[k] = t
-    print(weight_average)
+    final_data = {k: [capcheck_sum[k], syscall_sum[k], counts[k]] for k in capcheck_sum.keys() }
 
-# fig, ax =  plt.subplots(layout="constrained")
-#
-# rmean, _ = redis_data("out/redis.csv")
-# lmean = wrk_data("out/lighttpd.csv")
-# nmean = wrk_data("out/nginx.csv")
-# mmean = wrk_data("out/memcached.csv")
-# smean = sqlite_data("out/sqlite.csv")
-#
-# labels = ["redis", "lighttpd", "sqlite", "nginx", "memcached"]
-# data = [rmean, lmean, smean, nmean, mmean]
-# ax.bar(labels, data , label=labels, color=["red"])
-# print("Avg Overhead", np.mean(data))
-#
-# ax.set_ylabel('Overhead (\%)')
-#
-# fig.savefig("graphs/perf.png")
-#
+    return [final_data, total / totaltransactions]
 
-fig, ax = plt.subplots(layout="constrained")
-rbreakdown = breakdown_data("out/redis.dtrace")
-sbreakdown = breakdown_data("out/sqlite.dtrace")
+def breakdown_graph(title, data):
+    spt = data[1]
+    data = data[0]
+    labels = list(data.keys())
+    total = sum([v[2] for v in data.values()])
+    checkd = [ ((v[0] / (v[1] + v[0])) * 100) for k, v in data.items() ]
+    sysd = [ ((v[1] / (v[1] + v[0])) * 100) for k, v in data.items() ]
+
+    width = 0.5
+    weight_counts = {
+            "System call": sysd,
+            "Capability Check": checkd,
+    }
+    colors = {
+            "Capability Check": "#F8DE7E",
+            "System call": "#B2BEB5",
+    }
+
+
+    fig, ax = plt.subplots(layout="constrained")
+    bottom = np.zeros(len(labels))
+
+    matplotlib.rcParams["legend.frameon"] = True
+    
+    for name, weight_count in weight_counts.items():
+        p = ax.bar(labels, weight_count, width, label=name, bottom=bottom, color=colors[name])
+        bottom += weight_count
+    ax.set_title("{} - {:10.1f} Syscalls/transaction".format(title, spt))
+    ax.set_ylim([0., 100.])
+    ax.set_ylabel("Percentage (\%)")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=-60)
+    ax.legend(loc="lower right")
+    title = "".join(title.lower().split())
+    fig.savefig("graphs/{}.pgf".format(title))
+        
+fig, ax =  plt.subplots(layout="constrained")
+
+rmean, _ = redis_data("out/redis.csv")
+lmean = wrk_data("out/lighttpd.csv")
+nmean = wrk_data("out/nginx.csv")
+mmean = wrk_data("out/memcached.csv")
+smean, somean = sqlite_data("out/sqlite.csv")
+
+labels = ["redis", "lighttpd", "sqlite", "sqlite-rw", "nginx", "memcached"]
+data = [rmean, lmean, smean, somean, nmean, mmean]
+ax.bar(labels, data , label=labels, color=["#B2BEB5"])
+print("Avg Overhead", np.mean(data))
+
+ax.set_ylabel('Overhead (\%)')
+
+fig.savefig("graphs/perf.svg")
+
+breakdown_graph("redis", breakdown_data("out/redis.dtrace", redis_res))
+breakdown_graph("sqlite", breakdown_data("out/sqlite.dtrace", sqlite_res))
+breakdown_graph("memcached", breakdown_data("out/memcached.dtrace", memcached_res))
