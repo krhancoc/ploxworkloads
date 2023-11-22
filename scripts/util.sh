@@ -31,8 +31,7 @@ run_sqlite() {
 
 	DBBENCH="$ROOT/dbbench-0.6.10/dbbench"
 
-
-	$DBBENCH sqlite --iter 1000 --threads 4
+	$DBBENCH sqlite --iter 2000 --threads 4
 }
 
 run_memcached()
@@ -66,8 +65,7 @@ run_sqlite_with_plox() {
 
 	DBBENCH="$ROOT/dbbench-0.6.10/dbbench"
 
-
-	sudo $PLOXD/build/src/ploxd/plox $DBBENCH sqlite --iter 1000 --threads 4
+	sudo $PLOXD/build/src/ploxd/plox $DBBENCH sqlite --iter 2000 --threads 4
 }
 
 

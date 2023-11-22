@@ -230,19 +230,20 @@ sqlite_benchmark()
 
 	touch $OUTPUT
 
-	for ITER in {1..3}
+	for ITER in {1..5}
 	do
 		echo "Default - $ITER"
 		run_sqlite >> $OUTPUT
 		echo "" >> $OUTPUT
+		rm dbbench.sqlite*
 	done
 
 	echo "PLOX" >> $OUTPUT
 
-	for ITER in {1..3}
+	for ITER in {1..5}
 	do
 		echo "PLOX - $ITER"
-		build_kplox
+		build_kplox > /dev/null
 
 		kldload $PLOXD/kplox/kmod/plox.ko
 
@@ -251,11 +252,9 @@ sqlite_benchmark()
 		run_sqlite_with_plox
 
 		# Hack for now
-		sleep 20
+		sleep 60
 
 		echo "" >> $OUTPUT
-
-		sleep 5
 
 		kill -SIGKILL `pgrep ploxd`
 
@@ -269,10 +268,10 @@ sqlite_benchmark()
 
 	echo "PLOX" >> $OUTPUT
 
-	for ITER in {1..3}
+	for ITER in {1..5}
 	do
 		echo "PLOX - $ITER"
-		build_kplox "-DDISABLE_READ=1 -DDISABLE_WRITE=1"
+		build_kplox "-DDISABLE_READ=1 -DDISABLE_WRITE=1" > /dev/null
 
 		kldload $PLOXD/kplox/kmod/plox.ko
 
@@ -281,11 +280,9 @@ sqlite_benchmark()
 		run_sqlite_with_plox
 
 		# Hack for now
-		sleep 20
+		sleep 60
 
 		echo "" >> $OUTPUT
-
-		sleep 5
 
 		kill -SIGKILL `pgrep ploxd`
 
@@ -360,7 +357,7 @@ sqlite_dtrace()
 	dtrace -s $PLOXD/kplox/scripts/plox.d -o dtrace.out &
 
 	# Hack for now
-	sleep 20
+	sleep 30
 
 	kill -SIGINT `pgrep dtrace`
 
