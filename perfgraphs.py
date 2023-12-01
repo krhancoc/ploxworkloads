@@ -1,4 +1,5 @@
 import csv
+from decimal import Decimal
 from pathlib import Path
 import os
 import matplotlib
@@ -10,9 +11,10 @@ import scienceplots
 import numpy as np
 plt.style.use(['science', 'ieee'])
 
-
-REDIS_LOCATION="out/redis.csv"
 def extra_data(data_str):
+    if data_str is None:
+        return None
+
     header = data_str[0].split("\n")[0].split(",")
     all_data = []
     for entry in data_str:
@@ -46,39 +48,48 @@ def redis_data(filename):
         data = data.split("PLOX")
         default = data[0].split("\n\n")
         plox = data[1][1:].split("\n\n")
+        try:
+            ploxopt = data[2][1:].split("\n\n")
+        except:
+            ploxopt = None
 
         plox = extra_data(plox)
         default = extra_data(default)
+        ploxopt = extra_data(ploxopt)
         
 
     data = []
+    dataopt = []
     keys=list(plox.keys())
     for l in keys:
         data.append(((default[l][0] - plox[l][0]) / default[l][0]) * 100)
+        if ploxopt is not None:
+            dataopt.append(((default[l][0] - ploxopt[l][0]) / default[l][0]) * 100)
+    print(data, dataopt)
 
-    data = np.array(data)
-    avg = np.mean(data)
-    std = np.std(data)
-
-    return avg, std
+    return np.mean(data), np.mean(dataopt)
 
 def wrk_data(filename):
     plox = []
     default = []
+    ploxopt = []
     with open(filename) as f:
         data = f.readlines()
         for d in data:
             d = d.split(',')
             if d[0] == "default":
                 default.append(float(d[1].strip()))
-            else:
+            if d[0] == "plox":
                 plox.append(float(d[1].strip()))
+            else:
+                ploxopt.append(float(d[1].strip()))
 
     plox = np.array(plox) 
     default = np.array(default) 
     pavg = np.mean(plox)
+    poavg = np.mean(ploxopt)
     davg = np.mean(default)
-    return ((davg - pavg) / davg) * 100
+    return ((davg - pavg) / davg) * 100, ((davg - poavg) / davg) * 100
 
 def get_sqlite_data(data_str):
     entries = data_str.split("\n\n")
@@ -144,15 +155,11 @@ def pull_values(data):
 
     return d
 
-def memcached_res(results):
-    results = results.split("\n")[-2].split()
-    tps = float(results[6])
-    time = float(results[2][:-1])
-    return time * tps
+def last_res(results):
+    return int(results.split("\n")[-2])
 
-# Every operation is done 50k times
-def redis_res(results):
-    return len(results.split("\n")[2:-1]) * 50000
+def nginx_res(results):
+    return float(results.split("\n")[-4].split()[0])
 
 def sqlite_res(results):
     results = results[1:-1].split("\n\n")
@@ -185,8 +192,12 @@ def breakdown_graph(title, data):
     data = data[0]
     labels = list(data.keys())
     total = sum([v[2] for v in data.values()])
-    checkd = [ ((v[0] / (v[1] + v[0])) * 100) for k, v in data.items() ]
-    sysd = [ ((v[1] / (v[1] + v[0])) * 100) for k, v in data.items() ]
+    total_c = sum([v[0] for v in data.values()])
+    total_s = sum([v[1] for v in data.values()])
+
+    checkactual = [ ((v[0] / (v[1] + v[0])) * 100)  for k, v in data.items() ]
+    checkd = [ ((v[0] / (v[1] + v[0])) * 100) * (v[0] / total_c) for k, v in data.items() ]
+    sysd = [ ((v[1] / (v[1] + v[0])) * 100) * (v[0] / total_c) for k, v in data.items() ]
 
     width = 0.5
     weight_counts = {
@@ -200,38 +211,60 @@ def breakdown_graph(title, data):
 
 
     fig, ax = plt.subplots(layout="constrained")
+    ax.set_yscale('log')
     bottom = np.zeros(len(labels))
 
     matplotlib.rcParams["legend.frameon"] = True
-    
+     
     for name, weight_count in weight_counts.items():
-        p = ax.bar(labels, weight_count, width, label=name, bottom=bottom, color=colors[name])
+        bars = ax.bar(labels, weight_count, width, label=name, bottom=bottom, color=colors[name])
         bottom += weight_count
+        if name == "Capability Check":
+            ax.bar_label(bars,  ['%.3f\\%%' % x for x in checkactual], label_type='edge')
+
+    ax.set_ylim(ax.get_ylim()[0], 110.)
     ax.set_title("{} - {:10.1f} Syscalls/transaction".format(title, spt))
-    ax.set_ylim([0., 100.])
     ax.set_ylabel("Percentage (\%)")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=-60)
-    ax.legend(loc="lower right")
+    ax.legend()
     title = "".join(title.lower().split())
+    fig.savefig("graphs/{}.svg".format(title))
     fig.savefig("graphs/{}.pgf".format(title))
         
 fig, ax =  plt.subplots(layout="constrained")
 
-rmean, _ = redis_data("out/redis.csv")
-lmean = wrk_data("out/lighttpd.csv")
-nmean = wrk_data("out/nginx.csv")
-mmean = wrk_data("out/memcached.csv")
+rmean, romean = redis_data("out/redis.csv")
+lmean, lomean = wrk_data("out/lighttpd.csv")
+nmean, nomean = wrk_data("out/nginx.csv")
+mmean, momean = wrk_data("out/memcached.csv")
 smean, somean = sqlite_data("out/sqlite.csv")
 
-labels = ["redis", "lighttpd", "sqlite", "sqlite-rw", "nginx", "memcached"]
-data = [rmean, lmean, smean, somean, nmean, mmean]
-ax.bar(labels, data , label=labels, color=["#B2BEB5"])
-print("Avg Overhead", np.mean(data))
+sc_redis, _ = redis_data("out/redis-seccomp.csv")
+sc_light, _ = wrk_data("out/lighttpd-seccomp.csv")
+sc_nginx, _ = wrk_data("out/nginx-seccomp.csv")
+sc_memcached, _ = wrk_data("out/memcached-seccomp.csv")
+print(sc_redis, sc_light, sc_nginx, sc_memcached)
+
+labels = ["Redis+DC", "Redis*+DC", "Redis+S", "lighttpd+DC", "lighttpd*+DC", "lighttpd+S", "nginx+DC", "nginx*+DC", "nginx+S", "memcached+DC", "memcached*+DC", "memcached+S", ]
+data = [rmean, romean, sc_redis, lmean, lomean, sc_light, nmean, nomean, sc_nginx, mmean, momean, sc_memcached]
+bars = ax.bar(labels, data , label=labels, color=["#B2BEB5","#BFBFFF", "#B2FFB5", "#B2BEB5", "#BFBFFF", "#B2FFB5","#B2BEB5", "#BFBFFF", "#B2FFB5", "#B2BEB5","#BFBFFF", "#B2FFB5"])
+ax.legend(bars[:3], ["PLOX", "PLOX Optimized", "Seccomp"])
+
+ax.set_xticklabels(ax.get_xticklabels(), rotation=-90)
+
+data = [romean, lomean, nomean, momean]
+print("Avg Overhead PLOX", np.mean(data))
+
+data = [sc_redis, sc_light, sc_nginx, sc_memcached]
+print("Avg Overhead Seccomp", np.mean(data))
 
 ax.set_ylabel('Overhead (\%)')
 
 fig.savefig("graphs/perf.svg")
+fig.savefig("graphs/perf.pgf")
 
-breakdown_graph("redis", breakdown_data("out/redis.dtrace", redis_res))
+breakdown_graph("redis", breakdown_data("out/redis.dtrace", last_res))
 breakdown_graph("sqlite", breakdown_data("out/sqlite.dtrace", sqlite_res))
-breakdown_graph("memcached", breakdown_data("out/memcached.dtrace", memcached_res))
+breakdown_graph("memcached", breakdown_data("out/memcached.dtrace", last_res))
+breakdown_graph("nginx", breakdown_data("out/nginx.dtrace", last_res))
+breakdown_graph("lighttpd", breakdown_data("out/lighttpd.dtrace", last_res))

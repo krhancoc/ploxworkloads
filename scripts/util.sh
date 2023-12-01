@@ -1,7 +1,7 @@
 #/usr/bin/env bash
 build_kplox() {
 	make -C $PLOXD/kplox -j 8 clean
-	CFLAGS="\"$1\"" make -C $PLOXD/kplox -j 8
+	CFLAGS="$1" make -C $PLOXD/kplox -j 8
 }
 
 run_lighttpd_with_plox() {
@@ -44,7 +44,6 @@ run_memcached()
 run_memaslap()
 {
 	ROOT=$(realpath "$(dirname "$0")/..")
-	DIRNAME="libmemcached-1.0.18"
 	MEMASLAP="memaslap"
 
 	$MEMASLAP -s 127.0.0.1:19999 -t 60s

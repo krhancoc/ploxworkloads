@@ -4,7 +4,8 @@ ROOT=$(realpath "$(dirname "$0")/..")
 
 cd $ROOT
 
-sudo pkg install wget gmake cmake autoreconf automake autotools pkgconf gcc libtool libevent-devel
+sudo pkg install wget gmake cmake autoreconf automake autotools pkgconf gcc libtool libevent-devel py39-pymemcache \
+  py39-redis py39-requests
 
 # Lighttpd setup
 wget https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-1.4.72.tar.gz
