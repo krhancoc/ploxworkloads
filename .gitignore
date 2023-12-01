@@ -2,6 +2,8 @@ logs/*
 libcoverage/*.so
 out/*
 lighttpd-1.4.72
+sec/sec
+*.rdb
 wrk
 bcpi
 libmemcached-1.0.18
